@@ -81,6 +81,13 @@ var (
 	ErrTriggerAlreadyExists = err{
 		code:  http.StatusConflict,
 		error: errors.New("Trigger already exists")}
+	ErrDatastoreEmptyTrigger = err{
+		code:  http.StatusBadRequest,
+		error: errors.New("Trigger empty")}
+	// move to Fn when merged
+	ErrDatastoreFnNotFound = err{
+		code:  http.StatusBadRequest,
+		error: errors.New("Trigger empty")}
 )
 
 func (t *Trigger) Validate() error {
@@ -107,4 +114,11 @@ func (t *Trigger) Validate() error {
 	t.Annotations.Validate()
 
 	return nil
+}
+
+func (t *Trigger) Clone() *Trigger {
+	clone := new(Trigger)
+	*clone = *t // shallow copy
+	//annotations? Not copied in explicitly others...
+	return clone
 }

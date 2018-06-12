@@ -915,7 +915,25 @@ func buildFilterCallQuery(filter *models.CallFilter) (string, []interface{}) {
 }
 
 func (ds *SQLStore) InsertTrigger(ctx context.Context, trigger *models.Trigger) (*models.Trigger, error) {
-	query := ds.db.Rebind(`INSERT INTO triggers (
+	err := ds.Tx(func(tx *sqlx.Tx) error {
+		query := tx.Rebind(`SELECT 1 FROM apps WHERE id=?`)
+		r := tx.QueryRowContext(ctx, query, trigger.AppID)
+		if err := r.Scan(new(int)); err != nil {
+			if err == sql.ErrNoRows {
+				return models.ErrAppsNotFound
+			}
+		}
+
+		// TODO after Fn work merged
+		// query = tx.Rebind(`SELECT 1 FROM fns WHERE id=?`)
+		// r = tx.QueryRowContext(ctx, query, trigger.FnID)
+		// if err := r.Scan(new(int)); err != nil {
+		// 	if err == sql.ErrNoRows {
+		// 		return models.ErrFnsNotFound
+		// 	}
+		// }
+
+		query = ds.db.Rebind(`INSERT INTO triggers (
 		id,
 		name,
     app_id,
@@ -937,15 +955,20 @@ func (ds *SQLStore) InsertTrigger(ctx context.Context, trigger *models.Trigger) 
     :source,
     :annotations
 	);`)
-	_, err := ds.db.NamedExecContext(ctx, query, trigger)
-	if err != nil {
-		if ds.helper.IsDuplicateKeyError(err) {
-			return nil, models.ErrTriggerAlreadyExists
-		}
-		return nil, err
-	}
 
-	return trigger, nil
+		_, err := ds.db.NamedExecContext(ctx, query, trigger)
+
+		if err != nil {
+			if ds.helper.IsDuplicateKeyError(err) {
+				return models.ErrTriggerAlreadyExists
+			}
+			return err
+		}
+
+		return err
+	})
+
+	return trigger, err
 }
 
 func (ds *SQLStore) UpdateTrigger(ctx context.Context, route *models.Trigger) (*models.Trigger, error) {

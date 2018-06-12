@@ -490,6 +490,55 @@ func Test(t *testing.T, dsf func(t *testing.T) models.Datastore) {
 			t.Fatalf("Test UpdateRoute inexistent: expected error to be `%v`, but it was `%v`", models.ErrRoutesNotFound, err)
 		}
 	})
+
+	t.Run("triggers", func(t *testing.T) {
+		ds := dsf(t)
+		// Insert app again to test triggers
+		testApp, err := ds.InsertApp(ctx, testApp)
+		if err != nil && err != models.ErrAppsAlreadyExists {
+			t.Fatal("Test InsertTrigger Prep: failed to insert app: ", err)
+		}
+
+		// Insert Fn again to test Triggers TODO post merge
+		//		testFn, err := ds.InsertApp(ctx, testApp)
+		//	if err != nil && err != models.ErrAppsAlreadyExists {
+		//	t.Fatal("Test InsertTrigger Prep: failed to insert app: ", err)
+		//		}
+
+		// Testing insert trigger
+		{
+			_, err = ds.InsertTrigger(ctx, nil)
+			if err != models.ErrDatastoreEmptyTrigger {
+				t.Fatalf("Test InsertTrigger(nil): expected error `%v`, but it was `%v`", models.ErrDatastoreEmptyTrigger, err)
+			}
+
+			newTestTrigger := testTrigger.Clone()
+			newTestTrigger.AppID = "notreal"
+			_, err = ds.InsertTrigger(ctx, newTestTrigger)
+			if err != models.ErrAppsNotFound {
+				t.Fatalf("Test InsertTrigger: expected error `%v`, but it was `%v`", models.ErrAppsNotFound, err)
+			}
+
+			newTestTrigger = testTrigger.Clone()
+			testTrigger.AppID = testApp.ID
+			newTestTrigger.FnID = "notreal"
+			_, err = ds.InsertTrigger(ctx, newTestTrigger)
+			if err != models.ErrAppsNotFound {
+				t.Fatalf("Test InsertTrigger: expected error `%v`, but it was `%v`", models.ErrDatastoreFnNotFound, err)
+			}
+
+			//	testTrigger.FnID = testFn.ID
+			testTrigger, err = ds.InsertTrigger(ctx, testTrigger)
+			if err != nil {
+				t.Fatalf("Test InsertTrigger: error when storing new trigger: %s", err)
+			}
+
+			_, err = ds.InsertTrigger(ctx, testTrigger)
+			if err != models.ErrTriggerAlreadyExists {
+				t.Fatalf("Test InsertTrigger duplicated: expected error to be `%v`, but it was `%v`", models.ErrTriggerAlreadyExists, err)
+			}
+		}
+	})
 }
 
 var testApp = &models.App{
@@ -504,4 +553,13 @@ var testRoute = &models.Route{
 	Timeout:     models.DefaultTimeout,
 	IdleTimeout: models.DefaultIdleTimeout,
 	Memory:      models.DefaultMemory,
+}
+
+var testTrigger = &models.Trigger{
+	ID:     "",
+	Name:   "test-triggers",
+	AppID:  "",
+	FnID:   "",
+	Type:   models.HTTP,
+	Source: "",
 }
