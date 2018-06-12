@@ -194,6 +194,18 @@ func (m *mock) batchDeleteRoutes(ctx context.Context, appID string) error {
 	return nil
 }
 
+func (m *mock) InsertTrigger(ctx context.Context, trigger *models.Trigger) (*models.Trigger, error) {
+	return nil, nil
+}
+
+func (m *mock) UpdateTrigger(ctx context.Context, trigger *models.Trigger) (*models.Trigger, error) {
+	return nil, nil
+}
+
+func (m *mock) RemoveTrigger(ctx context.Context, trigger *models.Trigger) error {
+	return nil
+}
+
 // GetDatabase returns nil here since shouldn't really be used
 func (m *mock) GetDatabase() *sqlx.DB {
 	return nil

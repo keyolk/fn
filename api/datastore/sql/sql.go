@@ -893,6 +893,18 @@ func buildFilterCallQuery(filter *models.CallFilter) (string, []interface{}) {
 	return b.String(), args
 }
 
+func (ds *SQLStore) InsertTrigger(ctx context.Context, route *models.Trigger) (*models.Trigger, error) {
+	return nil, nil
+}
+
+func (ds *SQLStore) UpdateTrigger(ctx context.Context, route *models.Trigger) (*models.Trigger, error) {
+	return nil, nil
+}
+
+func (ds *SQLStore) RemoveTrigger(ctx context.Context, route *models.Trigger) error {
+	return nil
+}
+
 // GetDatabase returns the underlying sqlx database implementation
 func (ds *SQLStore) GetDatabase() *sqlx.DB {
 	return ds.db

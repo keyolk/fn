@@ -83,6 +83,24 @@ func (m *metricds) RemoveRoute(ctx context.Context, appID string, routePath stri
 	return m.ds.RemoveRoute(ctx, appID, routePath)
 }
 
+func (m *metricds) InsertTrigger(ctx context.Context, trigger *models.Trigger) (*models.Trigger, error) {
+	ctx, span := trace.StartSpan(ctx, "ds_insert_trigger")
+	defer span.End()
+	return m.ds.InsertTrigger(ctx, trigger)
+}
+
+func (m *metricds) UpdateTrigger(ctx context.Context, trigger *models.Trigger) (*models.Trigger, error) {
+	ctx, span := trace.StartSpan(ctx, "ds_update_trigger")
+	defer span.End()
+	return m.ds.UpdateTrigger(ctx, trigger)
+}
+
+func (m *metricds) RemoveTrigger(ctx context.Context, trigger *models.Trigger) error {
+	ctx, span := trace.StartSpan(ctx, "ds_remove_trigger")
+	defer span.End()
+	return m.ds.RemoveTrigger(ctx, trigger)
+}
+
 // instant & no context ;)
 func (m *metricds) GetDatabase() *sqlx.DB { return m.ds.GetDatabase() }
 

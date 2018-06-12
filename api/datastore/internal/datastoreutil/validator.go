@@ -132,6 +132,18 @@ func (v *validator) RemoveRoute(ctx context.Context, appID string, routePath str
 	return v.Datastore.RemoveRoute(ctx, appID, routePath)
 }
 
+func (v *validator) InsertTrigger(ctx context.Context, trigger *models.Trigger) (*models.Trigger, error) {
+	return v.Datastore.InsertTrigger(ctx, trigger)
+}
+
+func (v *validator) UpdateTrigger(ctx context.Context, trigger *models.Trigger) (*models.Trigger, error) {
+	return v.Datastore.UpdateTrigger(ctx, trigger)
+}
+
+func (v *validator) RemoveTrigger(ctx context.Context, trigger *models.Trigger) error {
+	return v.Datastore.RemoveTrigger(ctx, trigger)
+}
+
 // GetDatabase returns the underlying sqlx database implementation
 func (v *validator) GetDatabase() *sqlx.DB {
 	return v.Datastore.GetDatabase()

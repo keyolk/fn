@@ -59,6 +59,18 @@ type Datastore interface {
 	// ErrDatastoreEmptyRoutePath when routePath is empty. Returns ErrRoutesNotFound when no route exists.
 	RemoveRoute(ctx context.Context, appID, routePath string) error
 
+	// InsertTrigger inserts a trigger. Returns ErrDatastoreEmptyTrigger when trigger is nil, and specific errors for each field
+	// Returns ErrTriggerAlreadyExists if the exact apiID, fnID, source, type combination already exists
+	InsertTrigger(ctx context.Context, trigger *Trigger) (*Trigger, error)
+
+	// UpdateTrigger updates a triggers source, extensions, name and/or FnId
+	// Returns empty fields errors for AppId, FnId, ID
+	UpdateTrigger(ctx context.Context, trigger *Trigger) (*Trigger, error)
+
+	// Removes a Trigger. Returns field specific errors if they are empty.
+	// Returns nil if successful
+	RemoveTrigger(ctx context.Context, trigger *Trigger) error
+
 	// GetDatabase returns the underlying sqlx database implementation
 	GetDatabase() *sqlx.DB
 
