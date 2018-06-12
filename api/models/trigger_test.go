@@ -12,8 +12,6 @@ var triggerJsonCases = []struct {
 	valString string
 }{
 	{val: &Trigger{}, valString: openEmptyJson + "}"},
-	{val: &Trigger{Extensions: map[string]interface{}{"foo": "bar"}}, valString: openEmptyJson + `,"extensions":{"foo":"bar"}}`},
-	{val: &Trigger{Extensions: map[string]interface{}{"baz": 1}}, valString: openEmptyJson + `,"extensions":{"baz":1}}`},
 }
 
 func TestTriggerJsonMarshalling(t *testing.T) {
@@ -30,23 +28,12 @@ func TestTriggerJsonMarshalling(t *testing.T) {
 
 var httpTrigger = &Trigger{Name: "name", AppID: "foo", FnID: "bar", Type: HTTP, Source: "baz"}
 
-var httpTriggerWithExtension = &Trigger{Name: "name", AppID: "foo", FnID: "bar", Type: HTTP, Source: "baz"}
-
-func (t *Trigger) SetExtensions(extension map[string]interface{}) {
-	t.Extensions = extension
-}
-
-func init() {
-	httpTriggerWithExtension.SetExtensions(map[string]interface{}{"foo": "bar"})
-}
-
 var triggerValidateCases = []struct {
 	val   *Trigger
 	valid bool
 }{
 	{val: &Trigger{}, valid: false},
 	{val: httpTrigger, valid: true},
-	{val: httpTriggerWithExtension, valid: false},
 }
 
 func TestTriggerValidate(t *testing.T) {

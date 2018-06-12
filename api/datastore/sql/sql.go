@@ -77,6 +77,19 @@ var tables = [...]string{`CREATE TABLE IF NOT EXISTS routes (
 	PRIMARY KEY (id)
 );`,
 
+	`CREATE TABLE IF NOT EXISTS triggers (
+	id varchar(256) NOT NULL,
+	name varchar(256) NOT NULL,
+	app_id varchar(256) NOT NULL,
+	fn_id varchar(256) NOT NULL,
+	created_at varchar(256) NOT NULL,
+	updated_at varchar(256) NOT NULL,
+	type varchar(256) NOT NULL,
+	source varchar(256) NOT NULL,
+	extensions text NOT NULL,
+	PRIMARY KEY (id)
+);`,
+
 	`CREATE TABLE IF NOT EXISTS logs (
 	id varchar(256) NOT NULL PRIMARY KEY,
 	app_id varchar(256) NOT NULL,
@@ -89,6 +102,8 @@ const (
 	callSelector      = `SELECT id, created_at, started_at, completed_at, status, app_id, path, stats, error FROM calls`
 	appIDSelector     = `SELECT id, name, config, annotations, syslog_url, created_at, updated_at FROM apps WHERE id=?`
 	ensureAppSelector = `SELECT id FROM apps WHERE name=?`
+
+	triggerIDSelector = `SELECT * FROM triggers WHERE id=?`
 
 	EnvDBPingMaxRetries = "FN_DS_DB_PING_MAX_RETRIES"
 )
@@ -296,6 +311,12 @@ func (ds *SQLStore) clear() error {
 		}
 
 		query = tx.Rebind(`DELETE FROM apps`)
+		_, err = tx.Exec(query)
+		if err != nil {
+			return err
+		}
+
+		query = tx.Rebind(`DELETE FROM triggers`)
 		_, err = tx.Exec(query)
 		if err != nil {
 			return err
@@ -893,8 +914,38 @@ func buildFilterCallQuery(filter *models.CallFilter) (string, []interface{}) {
 	return b.String(), args
 }
 
-func (ds *SQLStore) InsertTrigger(ctx context.Context, route *models.Trigger) (*models.Trigger, error) {
-	return nil, nil
+func (ds *SQLStore) InsertTrigger(ctx context.Context, trigger *models.Trigger) (*models.Trigger, error) {
+	query := ds.db.Rebind(`INSERT INTO triggers (
+		id,
+		name,
+    app_id,
+		fn_id,
+		created_at,
+		updated_at,
+    type,
+    source,
+    annotations
+	)
+	VALUES (
+		:id,
+		:name,
+    :app_id,
+		:fn_id,
+		:created_at,
+		:updated_at,
+    :type,
+    :source,
+    :annotations
+	);`)
+	_, err := ds.db.NamedExecContext(ctx, query, trigger)
+	if err != nil {
+		if ds.helper.IsDuplicateKeyError(err) {
+			return nil, models.ErrTriggerAlreadyExists
+		}
+		return nil, err
+	}
+
+	return trigger, nil
 }
 
 func (ds *SQLStore) UpdateTrigger(ctx context.Context, route *models.Trigger) (*models.Trigger, error) {
@@ -903,6 +954,22 @@ func (ds *SQLStore) UpdateTrigger(ctx context.Context, route *models.Trigger) (*
 
 func (ds *SQLStore) RemoveTrigger(ctx context.Context, route *models.Trigger) error {
 	return nil
+}
+
+func (ds *SQLStore) GetTriggerByID(ctx context.Context, triggerId string) (*models.Trigger, error) {
+	var trigger *models.Trigger
+	query := ds.db.Rebind(triggerIDSelector)
+	row := ds.db.QueryRowxContext(ctx, query, triggerId)
+
+	err := row.StructScan(&trigger)
+	if err == sql.ErrNoRows {
+		return nil, models.ErrTriggerNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return trigger, nil
 }
 
 // GetDatabase returns the underlying sqlx database implementation

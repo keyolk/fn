@@ -3,7 +3,6 @@ package models
 import (
 	"errors"
 	"net/http"
-	"reflect"
 	"time"
 
 	"github.com/fnproject/fn/api/id"
@@ -19,15 +18,15 @@ const (
 )
 
 type Trigger struct {
-	ID         string                 `json:"id" db:"id"`
-	Name       string                 `json:"name" db:"name"`
-	AppID      string                 `json:"app_id" db:"app_id"`
-	FnID       string                 `json:"fn_id" db:"fn_id"`
-	CreatedAt  strfmt.DateTime        `json:"created_at,omitempty" db:"created_at"`
-	UpdatedAt  strfmt.DateTime        `json:"updated_at,omitempty" db:"updated_at"`
-	Type       TriggerType            `json:"type" db:"type"`
-	Source     string                 `json:"source" db:"source"`
-	Extensions map[string]interface{} `json:"extensions,omitempty" db:"extensions"`
+	ID          string          `json:"id" db:"id"`
+	Name        string          `json:"name" db:"name"`
+	AppID       string          `json:"app_id" db:"app_id"`
+	FnID        string          `json:"fn_id" db:"fn_id"`
+	CreatedAt   strfmt.DateTime `json:"created_at,omitempty" db:"created_at"`
+	UpdatedAt   strfmt.DateTime `json:"updated_at,omitempty" db:"updated_at"`
+	Type        TriggerType     `json:"type" db:"type"`
+	Source      string          `json:"source" db:"source"`
+	Annotations Annotations     `json:"annotations,omitempty" db:"annotations"`
 }
 
 func (t *Trigger) SetDefaults() {
@@ -51,7 +50,7 @@ func (t1 *Trigger) Equals(t2 *Trigger) bool {
 
 	eq = eq && t1.Type == t2.Type
 	eq = eq && t1.Source == t2.Source
-	eq = eq && reflect.DeepEqual(t1.Extensions, t2.Extensions)
+	eq = eq && t1.Annotations.Equals(t2.Annotations)
 
 	// NOTE: datastore tests are not very fun to write with timestamp checks,
 	// and these are not values the user may set so we kind of don't care.
@@ -76,9 +75,12 @@ var (
 	ErrTriggerMissingSource = err{
 		code:  http.StatusBadRequest,
 		error: errors.New("Missing Trigger Source")}
-	ErrHTTPTriggerExtensionsSet = err{
-		code:  http.StatusBadRequest,
-		error: errors.New("HTTP Trigger doesn't support extensions")}
+	ErrTriggerNotFound = err{
+		code:  http.StatusNotFound,
+		error: errors.New("Trigger not found")}
+	ErrTriggerAlreadyExists = err{
+		code:  http.StatusConflict,
+		error: errors.New("Trigger already exists")}
 )
 
 func (t *Trigger) Validate() error {
@@ -102,12 +104,7 @@ func (t *Trigger) Validate() error {
 		return ErrTriggerMissingSource
 	}
 
-	switch t.Type {
-	case HTTP:
-		if len(t.Extensions) != 0 {
-			return ErrHTTPTriggerExtensionsSet
-		}
-	}
+	t.Annotations.Validate()
 
 	return nil
 }
