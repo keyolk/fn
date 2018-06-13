@@ -122,3 +122,7 @@ func (t *Trigger) Clone() *Trigger {
 	//annotations? Not copied in explicitly others...
 	return clone
 }
+
+func (t *Trigger) Update(src *Trigger) *Trigger {
+	return src
+}

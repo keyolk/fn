@@ -86,7 +86,7 @@ var tables = [...]string{`CREATE TABLE IF NOT EXISTS routes (
 	updated_at varchar(256) NOT NULL,
 	type varchar(256) NOT NULL,
 	source varchar(256) NOT NULL,
-	extensions text NOT NULL,
+  annotations text NOT NULL,
 	PRIMARY KEY (id)
 );`,
 
@@ -915,7 +915,6 @@ func buildFilterCallQuery(filter *models.CallFilter) (string, []interface{}) {
 }
 
 func (ds *SQLStore) InsertTrigger(ctx context.Context, trigger *models.Trigger) (*models.Trigger, error) {
-	logrus.Info("INSERT")
 	err := ds.Tx(func(tx *sqlx.Tx) error {
 		query := tx.Rebind(`SELECT 1 FROM apps WHERE id=?`)
 		r := tx.QueryRowContext(ctx, query, trigger.AppID)
@@ -934,38 +933,77 @@ func (ds *SQLStore) InsertTrigger(ctx context.Context, trigger *models.Trigger) 
 		// 	}
 		// }
 
-		query = ds.db.Rebind(`INSERT INTO triggers (
-		id,
-		name,
-    app_id,
-		fn_id,
-		created_at,
-		updated_at,
-    type,
-    source,
-    annotations
-	)
-	VALUES (
-		:id,
-		:name,
-    :app_id,
-		:fn_id,
-		:created_at,
-		:updated_at,
-    :type,
-    :source,
-    :annotations
-	);`)
+		//determine if insert or update
+		var dst models.Trigger
+		query = tx.Rebind(triggerIDSelector)
+		row := tx.QueryRowxContext(ctx, query, trigger.ID)
+		err := row.StructScan(&dst)
 
-		_, err := ds.db.NamedExecContext(ctx, query, trigger)
-
-		if err != nil {
-			if ds.helper.IsDuplicateKeyError(err) {
-				return models.ErrTriggerAlreadyExists
-			}
+		if err != nil && err != sql.ErrNoRows {
 			return err
-		}
+		} else if err == sql.ErrNoRows {
 
+			trigger.SetDefaults()
+			err = trigger.Validate()
+			if err != nil {
+				return err
+			}
+
+			query = tx.Rebind(`INSERT INTO triggers (
+			id,
+			name,
+		  app_id,
+			fn_id,
+			created_at,
+			updated_at,
+		  type,
+		  source,
+		  annotations
+		)
+		VALUES (
+			:id,
+			:name,
+		  :app_id,
+			:fn_id,
+			:created_at,
+			:updated_at,
+		  :type,
+		  :source,
+		  :annotations
+		);`)
+		} else {
+			// update
+			dst.Update(trigger)
+			err = dst.Validate()
+			if err != nil {
+				return err
+			}
+			trigger = &dst // set for query & to return
+
+			query = tx.Rebind(`UPDATE triggers (
+			id,
+			name,
+		  app_id,
+			fn_id,
+			created_at,
+			updated_at,
+		  type,
+		  source,
+		  annotations
+		)
+		VALUES (
+			:id,
+			:name,
+		  :app_id,
+			:fn_id,
+			:created_at,
+			:updated_at,
+		  :type,
+		  :source,
+		  :annotations
+		);`)
+		}
+		_, err = tx.NamedExecContext(ctx, query, trigger)
 		return err
 	})
 

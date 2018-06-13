@@ -7,7 +7,6 @@ import (
 
 	"github.com/fnproject/fn/api/models"
 	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 )
 
 func MetricDS(ds models.Datastore) models.Datastore {
@@ -87,7 +86,6 @@ func (m *metricds) RemoveRoute(ctx context.Context, appID string, routePath stri
 func (m *metricds) InsertTrigger(ctx context.Context, trigger *models.Trigger) (*models.Trigger, error) {
 	ctx, span := trace.StartSpan(ctx, "ds_insert_trigger")
 	defer span.End()
-	logrus.Info("METRIC")
 	return m.ds.InsertTrigger(ctx, trigger)
 }
 
