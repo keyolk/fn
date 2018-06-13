@@ -915,6 +915,7 @@ func buildFilterCallQuery(filter *models.CallFilter) (string, []interface{}) {
 }
 
 func (ds *SQLStore) InsertTrigger(ctx context.Context, trigger *models.Trigger) (*models.Trigger, error) {
+	logrus.Info("INSERT")
 	err := ds.Tx(func(tx *sqlx.Tx) error {
 		query := tx.Rebind(`SELECT 1 FROM apps WHERE id=?`)
 		r := tx.QueryRowContext(ctx, query, trigger.AppID)

@@ -15,6 +15,8 @@ type mock struct {
 	Apps   []*models.App
 	Routes []*models.Route
 
+	Triggers []*models.Trigger
+
 	models.LogStore
 }
 
@@ -195,7 +197,24 @@ func (m *mock) batchDeleteRoutes(ctx context.Context, appID string) error {
 }
 
 func (m *mock) InsertTrigger(ctx context.Context, trigger *models.Trigger) (*models.Trigger, error) {
-	return nil, nil
+	if _, err := m.GetAppByID(ctx, trigger.AppID); err != nil {
+		return nil, err
+	}
+
+	if r, _ := m.GetTriggerByID(ctx, trigger.ID); r != nil {
+		return nil, models.ErrTriggerAlreadyExists
+	}
+	m.Triggers = append(m.Triggers, trigger)
+	return trigger, nil
+}
+
+func (m *mock) GetTriggerByID(ctx context.Context, triggerId string) (*models.Trigger, error) {
+	for _, t := range m.Triggers {
+		if t.ID == triggerId {
+			return t, nil
+		}
+	}
+	return nil, models.ErrTriggerNotFound
 }
 
 func (m *mock) UpdateTrigger(ctx context.Context, trigger *models.Trigger) (*models.Trigger, error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 
 	"github.com/fnproject/fn/api/models"
 )
@@ -133,6 +134,10 @@ func (v *validator) RemoveRoute(ctx context.Context, appID string, routePath str
 }
 
 func (v *validator) InsertTrigger(ctx context.Context, trigger *models.Trigger) (*models.Trigger, error) {
+	if trigger == nil {
+		return nil, models.ErrDatastoreEmptyTrigger
+	}
+	logrus.Info("VALIDATOR")
 	return v.Datastore.InsertTrigger(ctx, trigger)
 }
 
